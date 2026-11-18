@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Light: warm paper with a deep amber accent */
+:root {
+  --paper: 244 241 237;
+  --surface: 255 253 251;
+  --ink: 31 27 24;
+  --accent: 158 95 20;
+  --accent-hover: 128 75 14;
+  --on-accent: 255 255 255;
+  --mute: 112 103 95;
+  --line: 222 215 207;
+  --mist: 233 227 220;
+  --danger: 178 58 46;
+}
+
+/* Dark (default: <html class="dark"> is set in index.html): charcoal and espresso with a warm amber accent */
+.dark {
+  color-scheme: dark;
+  --paper: 20 18 17;
+  --surface: 30 27 25;
+  --ink: 237 232 226;
+  --accent: 227 168 87;
+  --accent-hover: 238 187 117;
+  --on-accent: 28 21 14;
+  --mute: 163 154 145;
+  --line: 52 47 43;
+  --mist: 38 34 31;
+  --danger: 232 128 112;
+}
+
+@layer base {
+  body { @apply bg-paper font-sans text-ink antialiased; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-accent; outline-style: solid; }
+  button:not(:disabled) {
+    @apply transition-[background-color,color,border-color,transform,opacity] duration-150 active:scale-[0.98];
+  }
+  button:disabled { @apply cursor-not-allowed; }
+}
+
+/* Motion is decoration; honour the OS setting. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

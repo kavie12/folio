@@ -1,0 +1,10 @@
+name = "folio-tmdb-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+
+[vars]
+# Comma-separated list of origins allowed to call the proxy
+ALLOWED_ORIGIN = "http://localhost:5173,https://folio.pages.dev"
+
+# Secret (never committed):  npx wrangler secret put TMDB_TOKEN
+# Local dev: put TMDB_TOKEN=... in worker/.dev.vars
