@@ -4,7 +4,7 @@ compatibility_date = "2024-10-01"
 
 [vars]
 # Comma-separated list of origins allowed to call the proxy
-ALLOWED_ORIGIN = "http://localhost:5173,https://folio.pages.dev"
+ALLOWED_ORIGIN = "http://localhost:5173,https://folio.kavie12.workers.dev"
 
 # Secret (never committed):  npx wrangler secret put TMDB_TOKEN
 # Local dev: put TMDB_TOKEN=... in worker/.dev.vars

@@ -24,7 +24,7 @@ Commit `package-lock.json` too; CI uses `npm ci` and needs it.
 
 ## 2. Protect `main`
 
-On GitHub: *Settings > Branches > Add rule* for `main`:
+On GitHub: _Settings > Branches > Add rule_ for `main`:
 
 - Require a pull request before merging
 - Require the **CI / build** status check to pass
@@ -56,7 +56,7 @@ chore: bump vite
 docs: explain Worker deployment
 ```
 
-Present tense, lowercase, under about 70 characters. Add a body when the *why* isn't obvious.
+Present tense, lowercase, under about 70 characters. Add a body when the _why_ isn't obvious.
 
 ## 4. Database changes
 
@@ -77,7 +77,7 @@ npm version minor               # bumps package.json, commits and tags v1.1.0
 git push --follow-tags
 ```
 
-Then create a GitHub Release from the tag (*Releases > Draft a new release*) and generate the notes from merged pull requests.
+Then create a GitHub Release from the tag (_Releases > Draft a new release_) and generate the notes from merged pull requests.
 
 ## 6. Hotfixes and undoing
 
