@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { mediaKey, type HistoryFilter, type MediaItem, type MediaType, type WatchEntry } from '../types/media';
+import { mediaKey, type HistoryFilter, type MediaItem, type MediaType, type TvProgress, type WatchEntry } from '../types/media';
 
 export const HISTORY_PAGE_SIZE = 20;
 
@@ -9,8 +9,12 @@ interface Row {
   title: string;
   poster_path: string | null;
   release_year: number | null;
+  last_season: number | null;
+  last_episode: number | null;
   watched_at: string;
 }
+
+const COLUMNS = 'media_id, media_type, title, poster_path, release_year, last_season, last_episode, watched_at';
 
 const fromRow = (r: Row): WatchEntry => ({
   id: r.media_id,
@@ -19,6 +23,7 @@ const fromRow = (r: Row): WatchEntry => ({
   posterPath: r.poster_path,
   releaseYear: r.release_year,
   watchedAt: r.watched_at,
+  progress: r.last_season !== null ? { season: r.last_season, episode: r.last_episode } : null,
 });
 
 export interface HistoryPage {
@@ -35,7 +40,7 @@ export async function fetchHistoryPage(filter: HistoryFilter, page: number, sear
 
   let query = supabase
     .from('watch_history')
-    .select('media_id, media_type, title, poster_path, release_year, watched_at', { count: 'exact' })
+    .select(COLUMNS, { count: 'exact' })
     .order('watched_at', { ascending: false })
     .order('id', { ascending: false }) // stable order when timestamps tie
     .range(from, from + HISTORY_PAGE_SIZE - 1);
@@ -103,7 +108,7 @@ export async function fetchAllHistory(): Promise<WatchEntry[]> {
   for (let from = 0; ; from += CHUNK) {
     const { data, error } = await supabase
       .from('watch_history')
-      .select('media_id, media_type, title, poster_path, release_year, watched_at')
+      .select(COLUMNS)
       .order('watched_at', { ascending: false })
       .order('id', { ascending: false })
       .range(from, from + CHUNK - 1);
@@ -124,4 +129,14 @@ export async function fetchCounts(): Promise<{ movies: number; tv: number }> {
   };
   const [movies, tv] = await Promise.all([count('movie'), count('tv')]);
   return { movies, tv };
+}
+
+/** Sets (or clears, with null) the latest watched season, and optionally episode, of a TV show. */
+export async function updateProgress(item: MediaItem, progress: TvProgress | null): Promise<void> {
+  const { error } = await supabase
+    .from('watch_history')
+    .update({ last_season: progress?.season ?? null, last_episode: progress?.episode ?? null })
+    .eq('media_id', item.id)
+    .eq('media_type', 'tv');
+  if (error) throw new Error(error.message);
 }

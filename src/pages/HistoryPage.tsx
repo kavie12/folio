@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HISTORY_PAGE_SIZE } from '../api/history';
-import { MediaGrid } from '../components/MediaGrid';
+import { GRID_CLASS } from '../components/grid';
+import { HistoryCard } from '../components/HistoryCard';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
 import { SegmentedControl } from '../components/SegmentedControl';
@@ -55,10 +56,7 @@ export function HistoryPage() {
       <div className="mt-6 max-w-xl">
         <SearchInput
           value={input}
-          onChange={(value) => {
-            setInput(value);
-            setPage(1);
-          }}
+          onChange={(value) => { setInput(value); setPage(1); }}
           placeholder="Search your history"
           label="Search your history"
         />
@@ -81,7 +79,11 @@ export function HistoryPage() {
           </EmptyState>
         ) : (
           <div aria-busy={isPlaceholderData} className={`transition-opacity duration-200 ${isPlaceholderData ? 'opacity-50' : ''}`}>
-            <MediaGrid items={data.entries} />
+            <ul className={GRID_CLASS}>
+              {data.entries.map((entry, i) => (
+                <HistoryCard key={`${entry.mediaType}:${entry.id}`} entry={entry} index={i} />
+              ))}
+            </ul>
             <Pagination page={page} totalPages={totalPages} onChange={setPage} />
           </div>
         )}

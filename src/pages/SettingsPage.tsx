@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchAllHistory } from '../api/history';
+import { ChangePasswordForm } from '../components/ChangePasswordForm';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +69,12 @@ export function SettingsPage() {
       </section>
 
       <section className={panel}>
+        <h2 className="font-display text-lg font-semibold">Password</h2>
+        <p className="mt-1 text-sm text-mute">Choose a new password for signing in.</p>
+        <ChangePasswordForm />
+      </section>
+
+      <section className={panel}>
         <h2 className="font-display text-lg font-semibold">Your data</h2>
         <p className="mt-1 text-sm text-mute">
           Download your whole watch history as a CSV file: title, type, release year, TMDB ID and the date you watched it.
@@ -84,7 +91,7 @@ export function SettingsPage() {
       <section className={`${panel} border-danger/40`}>
         <h2 className="font-display text-lg font-semibold text-danger">Delete account</h2>
         <p className="mt-1 text-sm text-mute">
-          This permanently deletes your account, profile and watch history. It can’t be undone. Export your history above first if you want a copy.
+          This permanently deletes your account and watch history. It can’t be undone. Export your history above first if you want a copy.
         </p>
 
         {!confirming ? (
