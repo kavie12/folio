@@ -9,7 +9,7 @@ export interface Env {
 }
 
 const TMDB = 'https://api.themoviedb.org/3';
-const CACHE_TTL = { search: 300 };
+const CACHE_TTL = { search: 300, details: 86_400 };
 
 const json = (body: unknown, status: number, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(body), {
@@ -53,14 +53,18 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const allowed = env.ALLOWED_ORIGIN.split(',').map((s) => s.trim());
     const origin = req.headers.get('Origin');
+    // The Firefox extension calls from moz-extension://<random-per-install-id>, which can't be listed in advance.
+    // Everything served here is public TMDB data, so any extension origin is accepted.
+    const isExtension = !!origin && origin.startsWith('moz-extension://');
+    const originAllowed = !origin || allowed.includes(origin) || isExtension;
     const cors: Record<string, string> = {
-      'Access-Control-Allow-Origin': origin && allowed.includes(origin) ? origin : allowed[0],
+      'Access-Control-Allow-Origin': origin && originAllowed ? origin : allowed[0],
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       Vary: 'Origin',
     };
 
-    if (origin && !allowed.includes(origin)) return json({ error: 'Origin not allowed' }, 403, cors);
+    if (!originAllowed) return json({ error: 'Origin not allowed' }, 403, cors);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405, cors);
 
@@ -76,6 +80,10 @@ export default {
           { query, page: pageParam(url), include_adult: 'false', language: 'en-US' },
           CACHE_TTL.search,
         );
+      } else if (/^\/details\/(movie|tv)\/\d{1,9}$/.test(url.pathname)) {
+        // /details/tv/1622 -> TMDB /tv/1622 (title, poster, dates)
+        const [, , type, id] = url.pathname.split('/');
+        upstream = await fromTmdb(env, ctx, `/${type}/${id}`, { language: 'en-US' }, CACHE_TTL.details);
       } else {
         return json({ error: 'Not found' }, 404, cors);
       }
