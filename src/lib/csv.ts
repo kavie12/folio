@@ -1,6 +1,6 @@
 import type { WatchEntry } from '../types/media';
 
-const HEADER = ['Title', 'Type', 'Release year', 'TMDB ID', 'Watched at'];
+const HEADER = ['Title', 'Type', 'Release year', 'TMDB ID', 'Watched at', 'Last season', 'Last episode'];
 
 /** Quote when needed, and neutralise cells a spreadsheet would run as a formula. */
 function cell(value: string | number | null): string {
@@ -16,6 +16,8 @@ export function historyToCsv(entries: WatchEntry[]): string {
     e.releaseYear,
     e.id,
     e.watchedAt,
+    e.progress?.season ?? null,
+    e.progress?.episode ?? null,
   ]);
   return [HEADER, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
 }
