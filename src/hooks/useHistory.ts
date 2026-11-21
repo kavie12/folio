@@ -74,6 +74,7 @@ export function useToggleWatched() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: watchedKey });
       qc.invalidateQueries({ queryKey: historyKey });
+      qc.invalidateQueries({ queryKey: ['continue', user?.id] }); // a trigger may have removed a row
     },
   });
 }
@@ -100,6 +101,9 @@ export function useUpdateProgress() {
       ctx?.snapshot.forEach(([k, data]) => qc.setQueryData(k, data));
       toast.show('Couldn’t save your progress. Try again.', 'error');
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: historyKey }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: historyKey });
+      qc.invalidateQueries({ queryKey: ['continue', user?.id] }); // progress past the saved episode clears it
+    },
   });
 }
