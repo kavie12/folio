@@ -16,6 +16,7 @@ export function Layout() {
             <Link to="/" aria-label="Folio home"><Logo size={30} /></Link>
             <nav className="flex gap-1" aria-label="Main">
               <NavLink to="/" end className={navClass}>Search</NavLink>
+              <NavLink to="/continue" className={navClass}>Continue</NavLink>
               <NavLink to="/history" className={navClass}>History</NavLink>
             </nav>
           </div>

@@ -51,3 +51,68 @@ end; $$;
 
 revoke all on function public.delete_account() from public;
 grant execute on function public.delete_account() to authenticated;
+
+-- ───────── Continue (next episode to watch) ─────────
+create table if not exists public.continue_watching (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  media_id      integer not null,                         -- TMDB TV id
+  title         text not null,                            -- snapshot, like watch_history
+  poster_path   text,
+  release_year  integer,
+  season        integer not null check (season  >= 1),    -- the episode to watch next
+  episode       integer not null check (episode >= 1),
+  url           text not null check (url ~* '^https?://' and char_length(url) <= 2048),
+  updated_at    timestamptz not null default now(),
+  unique (user_id, media_id)                              -- one "next episode" per show
+);
+
+create index if not exists continue_watching_user_recent_idx
+  on public.continue_watching (user_id, updated_at desc);
+
+alter table public.continue_watching enable row level security;
+
+drop policy if exists "Read own continue"   on public.continue_watching;
+drop policy if exists "Insert own continue" on public.continue_watching;
+drop policy if exists "Update own continue" on public.continue_watching;
+drop policy if exists "Delete own continue" on public.continue_watching;
+create policy "Read own continue"   on public.continue_watching for select using (auth.uid() = user_id);
+create policy "Insert own continue" on public.continue_watching for insert with check (auth.uid() = user_id);
+create policy "Update own continue" on public.continue_watching for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Delete own continue" on public.continue_watching for delete using (auth.uid() = user_id);
+
+-- Keep Continue consistent no matter which app changed the history.
+
+-- Once progress reaches (or passes) the saved episode, it is no longer "next".
+create or replace function public.prune_continue_after_progress()
+returns trigger language plpgsql as $$
+begin
+  if new.media_type = 'tv' and new.last_season is not null then
+    delete from public.continue_watching c
+    where c.user_id = new.user_id
+      and c.media_id = new.media_id
+      and (c.season < new.last_season
+           or (c.season = new.last_season and c.episode <= coalesce(new.last_episode, 0)));
+  end if;
+  return null;
+end; $$;
+
+drop trigger if exists watch_history_prune_continue on public.watch_history;
+create trigger watch_history_prune_continue
+  after insert or update of last_season, last_episode on public.watch_history
+  for each row execute function public.prune_continue_after_progress();
+
+-- Removing a show from the history removes it from Continue.
+create or replace function public.remove_continue_after_removal()
+returns trigger language plpgsql as $$
+begin
+  if old.media_type = 'tv' then
+    delete from public.continue_watching where user_id = old.user_id and media_id = old.media_id;
+  end if;
+  return null;
+end; $$;
+
+drop trigger if exists watch_history_remove_continue on public.watch_history;
+create trigger watch_history_remove_continue
+  after delete on public.watch_history
+  for each row execute function public.remove_continue_after_removal();
