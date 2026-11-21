@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useRemoveContinue } from '../hooks/useContinue';
 import { safeHttpUrl } from '../lib/url';
 import { timeAgo } from '../lib/time';
 import type { ContinueEntry } from '../types/media';
 import { CardMenu } from './CardMenu';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Poster } from './Poster';
 
 /** Card on the Continue page: the next episode, and a link straight to it. */
 export function ContinueCard({ entry, index = 0 }: { entry: ContinueEntry; index?: number }) {
   const remove = useRemoveContinue();
+  const [confirming, setConfirming] = useState(false);
   const href = safeHttpUrl(entry.url); // never render an unsafe scheme as a link
   const host = href ? new URL(href).hostname : null;
 
@@ -23,7 +26,7 @@ export function ContinueCard({ entry, index = 0 }: { entry: ContinueEntry; index
         <div className="absolute right-2 top-2">
           <CardMenu
             label={`Options for ${entry.title}`}
-            items={[{ label: 'Remove from Continue', danger: true, onSelect: () => remove.mutate(entry.id) }]}
+            items={[{ label: 'Remove from Continue', danger: true, onSelect: () => setConfirming(true) }]}
           />
         </div>
       </Poster>
@@ -47,6 +50,19 @@ export function ContinueCard({ entry, index = 0 }: { entry: ContinueEntry; index
         </a>
       ) : (
         <span className="block rounded-md border border-line px-3 py-2 text-center text-sm text-mute">Link unavailable</span>
+      )}
+
+      {confirming && (
+        <ConfirmDialog
+          title={`Remove “${entry.title}” from Continue?`}
+          body="It will be removed from your Continue list. It is saved again if you open its next episode with the Folio Tracker extension."
+          confirmLabel="Remove"
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            remove.mutate(entry.id);
+          }}
+        />
       )}
     </li>
   );
