@@ -87,12 +87,17 @@ create policy "Delete own continue" on public.continue_watching for delete using
 create or replace function public.prune_continue_after_progress()
 returns trigger language plpgsql as $$
 begin
-  if new.media_type = 'tv' and new.last_season is not null then
-    delete from public.continue_watching c
-    where c.user_id = new.user_id
-      and c.media_id = new.media_id
-      and (c.season < new.last_season
-           or (c.season = new.last_season and c.episode <= coalesce(new.last_episode, 0)));
+  if new.media_type = 'tv' then
+    if new.last_season is null then
+      delete from public.continue_watching where user_id = new.user_id and media_id = new.media_id;
+    else
+      -- progress reached (or passed) the saved episode: it is no longer "next"
+      delete from public.continue_watching c
+      where c.user_id = new.user_id
+        and c.media_id = new.media_id
+        and (c.season < new.last_season
+             or (c.season = new.last_season and c.episode <= coalesce(new.last_episode, 0)));
+    end if;
   end if;
   return null;
 end; $$;
@@ -116,3 +121,22 @@ drop trigger if exists watch_history_remove_continue on public.watch_history;
 create trigger watch_history_remove_continue
   after delete on public.watch_history
   for each row execute function public.remove_continue_after_removal();
+
+-- Continue only holds shows that are tracked in the history (in it, with progress recorded).
+create or replace function public.require_tracked_show()
+returns trigger language plpgsql as $$
+begin
+  if not exists (
+    select 1 from public.watch_history h
+    where h.user_id = new.user_id and h.media_id = new.media_id
+      and h.media_type = 'tv' and h.last_season is not null
+  ) then
+    raise exception 'This show is not tracked in the history' using errcode = 'check_violation';
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists continue_requires_history on public.continue_watching;
+create trigger continue_requires_history
+  before insert or update on public.continue_watching
+  for each row execute function public.require_tracked_show();

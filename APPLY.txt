@@ -1,0 +1,3 @@
+Run supabase/migrations/006_continue_requires_history.sql once in the Supabase SQL editor.
+It deletes any Continue entries for shows that are not tracked in the history, so it is safe to run.
+Then copy the files over your repo. No files to delete.
