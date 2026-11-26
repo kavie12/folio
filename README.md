@@ -87,7 +87,8 @@ Never commit `.env` or `.dev.vars`; both are git-ignored.
 
 ## Notes
 
-- **Continue** is stored in `continue_watching` (one row per show: season, episode and the page URL). The extension writes it; the web app lists it and lets you remove entries. Continue only holds shows tracked in History (with a season and episode recorded); the database refuses anything else. Triggers drop an entry once your progress reaches it, when you clear the progress, or when you remove the show from History.
+- **Continue** is stored in `continue_watching` (one row per show: season, episode, the page URL and a `manual` flag). The Folio Tracker extension writes it, including the next episode after you finish one; the web app lists it and lets you remove entries. Automatic entries are only allowed for shows tracked in History (a season recorded), and the database refuses anything else; entries the user adds by hand (`manual`) are exempt. Triggers drop an entry once your progress reaches it or finishes its season, and drop automatic ones when you clear the progress or remove the show from History.
+- **Season progress**: a progress with a season and no episode means that season is finished (the extension stores a season's last episode that way). Leaving the episode empty in the progress dialog therefore marks the whole season as watched for Continue.
 - **Anime** has no separate category. It appears under Movies or TV shows by TMDB type.
 - **TV progress** is stored as `last_season` (required) and `last_episode` (optional) on each TV entry. Set it from the ⋮ menu on a History card; it appears as a short label such as `S3E3` on the poster.
 - **Deleting an account** runs a `security definer` function that removes the user; your history is deleted with it.

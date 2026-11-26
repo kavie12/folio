@@ -64,8 +64,12 @@ create table if not exists public.continue_watching (
   episode       integer not null check (episode >= 1),
   url           text not null check (url ~* '^https?://' and char_length(url) <= 2048),
   updated_at    timestamptz not null default now(),
+  manual        boolean not null default false,           -- added by the user, not by the automatic rule
   unique (user_id, media_id)                              -- one "next episode" per show
 );
+
+-- For databases created before manual entries existed
+alter table public.continue_watching add column if not exists manual boolean not null default false;
 
 create index if not exists continue_watching_user_recent_idx
   on public.continue_watching (user_id, updated_at desc);
@@ -89,14 +93,16 @@ returns trigger language plpgsql as $$
 begin
   if new.media_type = 'tv' then
     if new.last_season is null then
-      delete from public.continue_watching where user_id = new.user_id and media_id = new.media_id;
+      -- progress cleared: the show is no longer tracked, so automatic entries go (manual ones stay)
+      delete from public.continue_watching c
+      where c.user_id = new.user_id and c.media_id = new.media_id and not c.manual;
     else
-      -- progress reached (or passed) the saved episode: it is no longer "next"
+      -- progress reached (or passed) the saved episode, or the whole season is finished (no episode)
       delete from public.continue_watching c
       where c.user_id = new.user_id
         and c.media_id = new.media_id
         and (c.season < new.last_season
-             or (c.season = new.last_season and c.episode <= coalesce(new.last_episode, 0)));
+             or (c.season = new.last_season and (new.last_episode is null or c.episode <= new.last_episode)));
     end if;
   end if;
   return null;
@@ -112,7 +118,8 @@ create or replace function public.remove_continue_after_removal()
 returns trigger language plpgsql as $$
 begin
   if old.media_type = 'tv' then
-    delete from public.continue_watching where user_id = old.user_id and media_id = old.media_id;
+    delete from public.continue_watching
+    where user_id = old.user_id and media_id = old.media_id and not manual;
   end if;
   return null;
 end; $$;
@@ -126,6 +133,9 @@ create trigger watch_history_remove_continue
 create or replace function public.require_tracked_show()
 returns trigger language plpgsql as $$
 begin
+  if new.manual then
+    return new;
+  end if;
   if not exists (
     select 1 from public.watch_history h
     where h.user_id = new.user_id and h.media_id = new.media_id
