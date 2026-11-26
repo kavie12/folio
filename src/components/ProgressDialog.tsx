@@ -30,7 +30,7 @@ export function ProgressDialog({ entry, onSave, onClear, onClose }: Props) {
     <Modal labelledBy="progress-title" onClose={onClose}>
       <form onSubmit={submit}>
         <h2 id="progress-title" className="font-display text-lg font-semibold">Where are you up to?</h2>
-        <p className="mt-1 text-sm text-mute">Latest season you watched of {entry.title}. The episode is optional.</p>
+        <p className="mt-1 text-sm text-mute">Latest season and episode you watched of {entry.title}. Leave the episode blank if you finished the whole season.</p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <label className="block text-sm font-medium">
